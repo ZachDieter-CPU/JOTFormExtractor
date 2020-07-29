@@ -38,13 +38,15 @@ class SVUmtck:
         if externalSuperVisorEmail in self.ExternalSuperVisorEmails:
             self.ExternalSuperVisorEmails[externalSuperVisorEmail].append(employeeName)
         else:
+            print("adding " + externalSuperVisorEmail)
             self.ExternalSuperVisorEmails[externalSuperVisorEmail] = []
             self.ExternalSuperVisorEmails[externalSuperVisorEmail].append(employeeName)
 
-        if externalSuperVisorName in self.ExternalSuperVisorEmails:
-            self.ExternalSuperVisorNames[externalSuperVisorName].append(externalSuperVisorEmail)
-        else:
+        if externalSuperVisorName not in self.ExternalSuperVisorNames:
             self.ExternalSuperVisorNames[externalSuperVisorName] = []
+            self.ExternalSuperVisorNames[externalSuperVisorName].append(externalSuperVisorEmail) 
+        
+        if externalSuperVisorEmail not in self.ExternalSuperVisorNames[externalSuperVisorName]:
             self.ExternalSuperVisorNames[externalSuperVisorName].append(externalSuperVisorEmail)
 
     #Call this if you need to print out the whole class 
@@ -57,11 +59,11 @@ class SVUmtck:
         print("Here are the super visors under me with their employees")
 
         for ENames in self.ExternalSuperVisorNames:
-            print("---" + ENames)
-            for Email in self.ExternalSuperVisorNames[ENames]:
-                print("+++" + Email) 
-                for employee in self.ExternalSuperVisorEmails[Email]:
-                    print(">>>" + employee)
+            print("+++" + ENames) 
+            for email in self.ExternalSuperVisorNames[ENames]:
+                print(">>>" + email)
+                for employee in self.ExternalSuperVisorEmails[email]:
+                    print(employee)
             print("\n")
 
     #Just a helper function to make things clearer
@@ -107,16 +109,17 @@ class SVUmtck:
         superVisorName = self.removeLastComma(superVisorName)
         sheetName.write(currentYPosition, currentXPosition, self.UtmckEmail)
         sheetName.write(currentYPosition, currentXPosition+1,superVisorName)
-
+        print("staRT")
         externalInfo = ""
-        count = 0
+        count = 1
         for ENames in self.ExternalSuperVisorNames:
             for Email in self.ExternalSuperVisorNames[ENames]:
                 externalInfo += "Manager: " + ENames + " (" + Email + ")\n"
                 for employee in self.ExternalSuperVisorEmails[Email]:
+                    print(str(count) + " Excel Writing: " + employee)
                     externalInfo += str(count) + ". " + employee + "\n"
                     count += 1
-                count = 0
+                count = 1
         sheetName.write(currentYPosition, currentXPosition+2, externalInfo)                
         return currentYPosition+1
 
@@ -190,6 +193,7 @@ def MailMergeExcelWrite2(UTMCKInfo):
 
     #Employees
     for Email in UTMCKInfo:
+        UTMCKInfo[Email].printMe()
         yPosition = UTMCKInfo[Email].WriteMeToExcel2(outSheet, xPosition, yPosition)
 
 
@@ -292,8 +296,12 @@ def getUniqueList(l):
 def main():
 
     #TODO: Add argparser
+
+    debug = 1
     #ExcelWriterPicker = input("Please pick an Excel writer (0 - 2): ")
     ExcelWriterPicker = 2 
+
+    ListOfActivitieAccountsPicker = 0
 
     #Dictionary (key, value)
     DictOfUtmckSV = {}
@@ -330,7 +338,7 @@ def main():
             #Creating the name with email
             EmployeeEmailExternal = LowernCap(line[9])
             EmployeeNameExternal = LowernCap(line[5]) + " " + LowernCap(line[7]) 
-            EmployeeNameandEmailExternal = EmployeeNameExternal + " (" + EmployeeEmailExternal + ")"
+            EmployeeNameandEmailExternal = EmployeeNameExternal # + " (" + EmployeeEmailExternal + ")"
 
             #Creates the name for the SuperVisor of external employees
             SuperVisorExternal = LowernCap(line[17]) + " " + LowernCap(line[18])
@@ -343,15 +351,24 @@ def main():
             SVULast = LowernCap(line[22])
             SuperVisorUTMCK = LowernCap(line[21]) + " " + LowernCap(line[22]) 
 
-            bValid = CheckIfUserEnabled((SVULast + ", " + SVUFirst), ListOfActivieAccounts)
-            if(bValid != None):
-                ListOfActivieAccounts.remove(bValid)
-                ActiviteAccountsCount +=1
-                continue
+
+            if(ListOfActivitieAccountsPicker == 1):
+                bValid = CheckIfUserEnabled((SVULast + ", " + SVUFirst), ListOfActivieAccounts)
+                if(bValid != None):
+                    ListOfActivieAccounts.remove(bValid)
+                    ActiviteAccountsCount +=1
+                    continue
                 
 
             #Gets the email for UTMCK
-            EmailUTMCK = LowernCap(line[24])
+            EmailUTMCK = (line[24].lower())
+
+            if(debug == 1):
+                print("Current UT Point of contact: " + SuperVisorUTMCK + " (" +  EmailUTMCK + ")")
+                print("Current External Supervisor: " + SuperVisorExternal+ " (" +  EmailExternal + ")")
+                print("Current External Employee: " + EmployeeNameandEmailExternal)
+                print("\n")
+
 
             if EmailUTMCK in DictOfUtmckSV:
                 temp = DictOfUtmckSV.get(EmailUTMCK)
@@ -367,7 +384,7 @@ def main():
                 #externalSuperVisorEmail, externalSuperVisorName, employeeName
                 classHolder.add_ExternalSuperVisor(EmailExternal, SuperVisorExternal, EmployeeNameExternal)
                 DictOfUtmckSV[EmailUTMCK] = classHolder
-
+            #DictOfUtmckSV[EmailUTMCK].printMe()
             if(EmployeeEmailExternal != ""):
                 NamesToLookUpEE += EmployeeEmailExternal + ","            
 
